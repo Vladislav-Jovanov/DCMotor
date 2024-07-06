@@ -48,7 +48,7 @@ DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
           error=my_motor.process_command(computerdata,&Serial);
           if(error){
             Serial.println("Command for motor doesn't exist. Halting everyting.");
-            stop_all();
+            my_motor.stopMotor();
           }
           break;
        default:
