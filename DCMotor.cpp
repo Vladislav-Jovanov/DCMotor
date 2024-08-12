@@ -30,9 +30,7 @@ void DCMotor::setPins(String Mode){
 }
 
 void DCMotor::stopMotor(){
-    set_pwm(0);
-    setPins("Stop");   
-    delay(250);
+    set_pwm(0); 
 }
 
 bool DCMotor::get_direction(){
@@ -61,6 +59,7 @@ void DCMotor::set_pwm(int pwm_in){
     if (pwm==0){
       setPins("Stop");
     }
+    analogWrite(pin_pwm, floatMap(pwm, 0,100,0,255));
 }
 
 void DCMotor::startMotor(int pwm_in, bool direction_in){
@@ -69,7 +68,6 @@ void DCMotor::startMotor(int pwm_in, bool direction_in){
     }
     set_direction(direction_in);
     set_pwm(pwm_in);
-    analogWrite(pin_pwm, floatMap(pwm, 0,100,0,255));
 }
 
 void DCMotor::setupMotor(){
@@ -107,7 +105,7 @@ int DCMotor::process_command(String *input_command, HardwareSerial * Serial){
          }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+4)=="dir"){
             display_direction(Serial);
             return 0;
-         }else if ((input_command->substring(input_command->indexOf("_")+1).toInt()<=0) & (input_command->substring(input_command->indexOf("_")+1)!="0")){
+         }else if (input_command->substring(input_command->indexOf("_")+1).toInt()<0){
           //unallowed command
             return 1;
             //set count at inf
