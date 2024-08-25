@@ -12,7 +12,7 @@ class DCRPMDriver
         void start(float speed,bool direction);
         void set_direction(bool direction_in);        
         void set_speed(float speed);
-        void get_speed(){return speed;};      
+        float get_speed(){return speed;};      
         void stop();
         int process_command(String * input_command, HardwareSerial * Serial);
         String get_direction();

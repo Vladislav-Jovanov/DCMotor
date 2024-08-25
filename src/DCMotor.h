@@ -1,6 +1,5 @@
 #ifndef DCMOTOR_H
 #define DCMOTOR_H
-#include "HardwareSerial.h"
 
 
 class DCMotor
@@ -16,11 +15,12 @@ class DCMotor
         void stop_coils();
         void check_coils();
     protected:
-
-    private:
         int pin_dir1;
         int pin_dir2;
         int pin_pwm;
+
+    private:
+        
 };
 
 #endif // DCMOTOR_H

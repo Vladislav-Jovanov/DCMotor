@@ -76,11 +76,11 @@ String DCRPMDriver::get_direction(){
 
 int DCRPMDriver::process_command(String *input_command, HardwareSerial * Serial){        
         //change of motor direction
-        if (input_command->charAt(input_command->indexOf("_")+3)=="CW"){
+        if (input_command->substring(input_command->indexOf("_"),input_command->indexOf("_")+3)=="CW"){
             set_direction(1);
             return 0;
          //change of motor direction
-         }else if (input_command->charAt(input_command->indexOf("_")+4)=="CCW"){
+         }else if (input_command->substring(input_command->indexOf("_"),input_command->indexOf("_")+4)=="CCW"){
             set_direction(0);
             return 0;
          }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+4)=="off"){

@@ -1,6 +1,18 @@
-#include "DCMotor.h"
-#include "Arduino.h"
-#include "HardwareSerial.h"
+#include <DCMotor.h>
+#include <Arduino.h>
+
+#if defined (ESP32)
+    #include <driver/ledc.h>
+    #define LEDC_TIMER              LEDC_TIMER_0
+    #define LEDC_MODE               LEDC_HIGH_SPEED_MODE
+    #define LEDC_CHANNEL            LEDC_CHANNEL_0
+    #define LEDC_DUTY_RES           LEDC_TIMER_12_BIT // Set duty resolution to 13 bits
+    #define LEDC_DUTY               0 // Set duty to 50%. (2 ** 8) * 50% = 4096
+    #define LEDC_FREQUENCY          7000 // Frequency in Hertz. Set frequency at 4 kHz
+#endif
+
+
+
 
 DCMotor::DCMotor(int dir1_pin, int dir2_pin, int pwm_pin)
 {   
@@ -45,14 +57,44 @@ void DCMotor::stop(){
 
 
 void DCMotor::start(unsigned int pwm_duty){
-    analogWrite(pin_pwm, pwm_duty);
+    #if defined (__AVR__)    
+        analogWrite(pin_pwm, pwm_duty);
+    #endif
+    #if defined (ESP32)
+        ledc_set_duty(LEDC_MODE , LEDC_CHANNEL, pwm_duty);
+        ledc_update_duty(LEDC_MODE , LEDC_CHANNEL);    
+    #endif
 }
 
 void DCMotor::setup(){
-    TCCR1B = TCCR1B & B11111000 | B00000010; //  3921.16 Hz for pin 9
+    #if defined (__AVR__)
+        TCCR1B = TCCR1B & B11111000 | B00000010; //  3921.16 Hz for pin 9
+        pinMode(pin_pwm, OUTPUT);
+    #endif
+    #if defined (ESP32)
+        ledc_timer_config_t ledc_timer = {
+            .speed_mode       = LEDC_MODE,
+            .duty_resolution  = LEDC_DUTY_RES,
+            .timer_num        = LEDC_TIMER,
+            .freq_hz          = LEDC_FREQUENCY,  // Set output frequency at 5 kHz
+            .clk_cfg          = LEDC_AUTO_CLK
+        };
+
+        ledc_channel_config_t ledc_channel = {
+            .gpio_num       = pin_pwm,
+            .speed_mode     = LEDC_MODE,
+            .channel        = LEDC_CHANNEL,
+            .intr_type      = LEDC_INTR_DISABLE,
+            .timer_sel      = LEDC_TIMER,
+            .duty           = 0, // Set duty to 0%
+            .hpoint         = 0 //phase shift
+        };
+        ledc_timer_config(&ledc_timer);
+        ledc_channel_config(&ledc_channel);
+    #endif
+
     pinMode(pin_dir1, OUTPUT);
     pinMode(pin_dir2, OUTPUT);
-    pinMode(pin_pwm, OUTPUT);
     stop_coils();
 }
 
