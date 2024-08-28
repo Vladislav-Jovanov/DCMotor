@@ -64,6 +64,8 @@ DCRPMDriver my_driver(&my_motor);
  // the setup routine runs once when you press reset:
  void setup() {
    my_motor.setup();
+   my_driver.set_direction(1);
+   my_driver.set_speed(25);
    Serial.begin(9600);
    Serial.println(COMMANDS);
 }
@@ -74,5 +76,6 @@ DCRPMDriver my_driver(&my_motor);
      ProcessCommand(&computerdata);
      serial_event=false;
    }
+   my_driver.main();
  }
 

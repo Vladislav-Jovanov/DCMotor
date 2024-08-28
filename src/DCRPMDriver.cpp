@@ -24,30 +24,40 @@ void DCRPMDriver::stop(){
 
 void DCRPMDriver::set_speed(float speed_in){
     if (speed_in<0){
-        speed=0;
+        speed_in=0;
     }else if (speed_in>100){
-        speed=100;
+        speed_in=100;    
+    }
+    if (accl){
+        new_speed=speed_in;
+        //you also need time
     }else{
         speed=speed_in;    
+        pwm=floatMap(speed, 0, 100, 0, 255);    
     }
-    pwm=floatMap(speed, 0, 100, 0, 255);
-    if (movement){
-       Motor->start(pwm);
-    }
+    speed_received=true;
 }
 
 
-void DCRPMDriver::set_direction(bool direction_in){
+void DCRPMDriver::set_direction(bool direction_in){    
+    if (accl){
+        new_speed=speed;
+        speed=0;
+        speed_received=true;
+        //you also need time
+    }else{
+        direction_received=true;
+    }
     direction=direction_in;
-    if (movement){
-       Motor->set_coils(direction);
-    } 
+    
 }
 
 void DCRPMDriver::start(){
-    Motor->set_coils(direction);
-    Motor->start(pwm);
-    movement=true;
+    if (direction!=NULL && pwm!=NULL){
+        Motor->set_coils(direction);
+        Motor->start(pwm);
+        movement=true;
+    }
 }
 
 
@@ -74,13 +84,27 @@ String DCRPMDriver::get_direction(){
 
 }
 
+
+void DCRPMDriver::main(){
+    if (movement && !accl){
+        if (speed_received){        
+            Motor->start(pwm);
+            speed_received=false;
+        }
+        if (direction_received){
+            Motor->set_coils(direction);
+            direction_received=false;
+        }
+    }
+}
+
 int DCRPMDriver::process_command(String *input_command, HardwareSerial * Serial){        
         //change of motor direction
-        if (input_command->substring(input_command->indexOf("_"),input_command->indexOf("_")+3)=="CW"){
+        if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="CW"){
             set_direction(1);
             return 0;
          //change of motor direction
-         }else if (input_command->substring(input_command->indexOf("_"),input_command->indexOf("_")+4)=="CCW"){
+         }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+4)=="CCW"){
             set_direction(0);
             return 0;
          }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+4)=="off"){
@@ -97,7 +121,7 @@ int DCRPMDriver::process_command(String *input_command, HardwareSerial * Serial)
             return 1;
             //set count at inf
          }else{
-            set_speed(input_command->substring(input_command->indexOf("_")+1).toInt());         
+            set_speed(input_command->substring(input_command->indexOf("_")+1).toInt());        
             return 0;
          }
 }
