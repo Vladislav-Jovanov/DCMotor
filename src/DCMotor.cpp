@@ -1,6 +1,7 @@
 #include <DCMotor.h>
 #include <Arduino.h>
 
+//this is here because it is only used in this file
 #if defined (ESP32)
     #include <driver/ledc.h>
     #define LEDC_TIMER              LEDC_TIMER_0
@@ -10,7 +11,6 @@
     #define LEDC_DUTY               0 // Set duty to 50%. (2 ** 8) * 50% = 4096
     #define LEDC_FREQUENCY          7000 // Frequency in Hertz. Set frequency at 4 kHz
 #endif
-
 
 
 
@@ -26,9 +26,9 @@ DCMotor::~DCMotor()
     //dtor
 }
 
-void DCMotor::set_coils(bool direction){
+void DCMotor::set_coils(int direction){
   switch(direction){
-    case 0: //"CCW"
+    case -1: //"CCW"
         digitalWrite(pin_dir1, LOW);
         digitalWrite(pin_dir2, HIGH);
         break;
@@ -96,6 +96,16 @@ void DCMotor::setup(){
     pinMode(pin_dir1, OUTPUT);
     pinMode(pin_dir2, OUTPUT);
     stop_coils();
+}
+
+float DCMotor::calc_pwm(float speed, float speed_min, float speed_max, float pwm_min){
+    #if defined (__AVR__)
+        return (speed-speed_min) * (255-pwm_min) / (speed_max-speed_min) + pwm_min;
+    #endif
+    #if defined (ESP32)
+        int power=LEDC_DUTY_RES;
+        return (speed-speed_min) * ( pow(2,power) -1 - pwm_min) / (speed_max-speed_min) + pwm_min;
+    #endif 
 }
 
 void DCMotor::check_coils(){

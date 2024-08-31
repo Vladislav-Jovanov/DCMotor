@@ -2,12 +2,16 @@
 #include <DCRPMDriver.h>
 
 //here define pins for motor
-#define M1_dir1 7
-#define M1_dir2 8
-#define M1_pwm 9
-
-#define COMMANDS "Motor controls:\n'm_<num>' - set motor to <num>% power\n'm_off' - turn motor off, same as m_0\n'm_+' - set direction clockwise\n'm_-' - set direction counterclockwise\n'm_dir' - get direction\nAny other command will stop the motor."
-
+#if defined (__AVR__)
+    #define M1_dir1 7
+    #define M1_dir2 8
+    #define M1_pwm 9
+#endif
+#if defined (ESP32)
+    #define M1_dir1 18
+    #define M1_dir2 19
+    #define M1_pwm 21
+#endif
 
 
 String computerdata;  // in the main
@@ -63,11 +67,12 @@ DCRPMDriver my_driver(&my_motor);
 
  // the setup routine runs once when you press reset:
  void setup() {
-   my_motor.setup();
-   my_driver.set_direction(1);
-   my_driver.set_speed(25);
-   Serial.begin(9600);
+   Serial.begin(115200);
    Serial.println(COMMANDS);
+   my_motor.setup();
+   my_driver.set_direction(CW);
+   my_driver.set_speed(50);
+   my_driver.set_accl(5);
 }
 
 // // the loop routine runs over and over again forever:
