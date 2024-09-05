@@ -59,7 +59,7 @@ DCRPMDriver my_driver(&my_motor);
        default:
           Serial.println("Command doesn't exist. Halting everyting.");
           my_driver.stop();
-          Serial.println(COMMANDS);
+          Serial.println(DRIVERCOMMANDS);
           break;
      }
 
@@ -68,11 +68,9 @@ DCRPMDriver my_driver(&my_motor);
  // the setup routine runs once when you press reset:
  void setup() {
    Serial.begin(115200);
-   Serial.println(COMMANDS);
    my_motor.setup();
-   my_driver.set_direction(CW);
-   my_driver.set_speed(50);
-   my_driver.set_accl(5);
+   my_driver.enable_serial();
+   Serial.println(DRIVERCOMMANDS);
 }
 
 // // the loop routine runs over and over again forever:
