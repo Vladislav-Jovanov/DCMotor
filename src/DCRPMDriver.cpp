@@ -33,7 +33,16 @@ void DCRPMDriver::set_parameters(dir direction_in,float speed, float accl, float
     if (acclvalue==NULL){
         time_to_turn=1000L*turns/abs(final_speed);
     }else{
-        time_to_turn=1000L*turns/abs(final_speed) - 1000L*abs(final_speed)/acclvalue;
+        time_to_turn=1000L*turns/abs(final_speed) - 1000L*abs(final_speed)/(2*acclvalue);
+    }
+}
+
+void DCRPMDriver::update_time(float time){
+    if (!turns_to_cover && speed_reached && movement){
+        action_printed=false;
+        time=abs(time);
+        time_to_turn=1000L*time;
+        now_time=millis();
     }
 }
 
@@ -53,7 +62,8 @@ float DCRPMDriver::check_speed(float input){
 
 //can be used only if motor is ON and not 
 void DCRPMDriver::update_speed(float speed_in){        
-    if (!turns_to_cover && movement){    
+    if (!turns_to_cover && speed_reached && movement){
+        action_printed=false;    
         final_speed=check_speed(speed_in);
         update_sign(final_speed);
         speed_reached=false;           
@@ -64,14 +74,14 @@ void DCRPMDriver::update_speed(float speed_in){
 }
 
 void DCRPMDriver::update_accl(float accl){
-    if (!turns_to_cover && movement){ 
+    if (!turns_to_cover && speed_reached && movement){ 
         acclvalue=abs(accl);
     }
 }
 
 
 void DCRPMDriver::update_direction(dir direction_in){
-    if (!turns_to_cover && movement){
+    if (!turns_to_cover && speed_reached && movement){
         if (direction!=direction_in){
             direction=direction_in;
             update_sign(final_speed);                
@@ -82,18 +92,17 @@ void DCRPMDriver::update_direction(dir direction_in){
             speed_reached=false;
             now_time=millis();
         }
+        action_printed=false;
     }
-    
 }
 
 void DCRPMDriver::start(){
     if (direction!=NULL && final_speed!=NULL && !movement){
+        action_printed=false;
         movement=true;
         direction_received=true;
         speed_reached=false;
-        if (acclvalue!=NULL){
-            now_time=millis();        
-        }        
+        now_time=millis();        
         if (turns!=NULL){
             turns_to_cover=true;        
         }  
@@ -128,8 +137,11 @@ void DCRPMDriver::ramp_up_down(){
         if (speed>=final_speed){
             speed=final_speed;
             speed_reached=true;
+            if (final_speed==NULL){
+                stop();            
+            }
             if (turns_to_cover){
-                now_time=millis();                            
+                now_time=millis();                           
             }             
         }
     }else if (speed>final_speed){
@@ -141,9 +153,11 @@ void DCRPMDriver::ramp_up_down(){
         if (speed<=final_speed){
             speed=final_speed;
             speed_reached=true;
+            if (final_speed==NULL){
+                stop();            
+            }
             if (turns_to_cover){
-                stop();
-                turns_to_cover=false;      
+                now_time=millis(); 
             }          
         }
     }
@@ -163,12 +177,9 @@ void DCRPMDriver::main(){
             Motor->start(pwm);
             speed=final_speed;
             speed_reached=true;
-            if (final_speed!=NULL){
-                now_time=millis();                            
-            }else{
-                stop();
-                turns_to_cover=false;            
-            }
+            if (final_speed==NULL){
+                stop();            
+            }                
         }
         if (!speed_reached && acclvalue!=NULL){
             if (millis()-now_time>=25){
@@ -179,19 +190,29 @@ void DCRPMDriver::main(){
             }
         }
         if (speed_reached && turns_to_cover){
-           if (millis()-now_time>=time_to_turn){
-                final_speed=0;
-                speed_reached=false;           
-                if (acclvalue!=NULL){
-                    now_time=millis();
-                }        
+           if (millis()-now_time>=time_to_turn){       
+                turns_to_cover=false;        
+            }
+        }
+        if (serial_enabled){
+            if (is_action_finished() && !action_printed){
+                Serial->println("Action is finished!");
+                action_printed=true;            
             }
         }
     }
 }
 
-int DCRPMDriver::process_command(String *input_command, HardwareSerial * Serial){
+
+void DCRPMDriver::enable_serial(HardwareSerial * Serial_in){
+    Serial=Serial_in;
+    serial_enabled=true;
+}
+
+
+int DCRPMDriver::process_command(String *input_command){
     if (serial_enabled){
+        Serial->println("Action received!");
         if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+5)=="init"){
             float spd=input_command->substring(input_command->indexOf("S")+1,input_command->indexOf("A")).toFloat();
             float accl=input_command->substring(input_command->indexOf("A")+1,input_command->indexOf("T")).toFloat();
@@ -214,36 +235,36 @@ int DCRPMDriver::process_command(String *input_command, HardwareSerial * Serial)
         }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="on"){
             start();
             return 0;
-        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="d?"){
+        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="D?"){
             Serial->println(get_direction());
             return 0;
-        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="s?"){
+        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="S?"){
             Serial->println(get_speed());
             return 0;
-        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="a?"){
+        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="A?"){
             Serial->println(get_accl());
             return 0;
-        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="l?"){
+        }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="T?"){
             Serial->println(get_turns());
             return 0;
-        }else if (input_command->substring(input_command->indexOf("s")+1,input_command->indexOf("s")+5)=="NULL"){           
+        }else if (input_command->substring(input_command->indexOf("S")+1,input_command->indexOf("S")+5)=="NULL"){           
             update_speed(NULL);
             return 0;
-        }else if (input_command->substring(input_command->indexOf("a")+1,input_command->indexOf("a")+5)=="NULL"){
+        }else if (input_command->substring(input_command->indexOf("A")+1,input_command->indexOf("A")+5)=="NULL"){
             update_accl(NULL);        
             return 0;
-        }else if (input_command->indexOf("s")>0){
-            if (input_command->substring(input_command->indexOf("s")+1).toFloat()<=0){         
+        }else if (input_command->indexOf("S")>0){
+            if (input_command->substring(input_command->indexOf("S")+1).toFloat()<=0){         
                 return 1;
             }else {           
-                update_speed(input_command->substring(input_command->indexOf("s")+1).toFloat());
+                update_speed(input_command->substring(input_command->indexOf("S")+1).toFloat());
                 return 0;
             }
-        }else if (input_command->indexOf("a")>0){
-            if (input_command->substring(input_command->indexOf("a")+1).toFloat()<=0){          
+        }else if (input_command->indexOf("A")>0){
+            if (input_command->substring(input_command->indexOf("A")+1).toFloat()<=0){          
                 return 1;
-            }else if (input_command->substring(input_command->indexOf("a")+1).toFloat()>0){
-                update_accl(input_command->substring(input_command->indexOf("a")+1).toFloat());        
+            }else if (input_command->substring(input_command->indexOf("A")+1).toFloat()>0){
+                update_accl(input_command->substring(input_command->indexOf("A")+1).toFloat());        
                 return 0;
             }
         }else{

@@ -50,7 +50,7 @@ DCRPMDriver my_driver(&my_motor);
      int error;
      switch (generate_switch(computerdata)){
         case 0:
-          error=my_driver.process_command(computerdata,&Serial);
+          error=my_driver.process_command(computerdata);
           if(error){
             Serial.println("Command for motor doesn't exist. Halting everyting.");
             my_driver.stop();
@@ -69,7 +69,7 @@ DCRPMDriver my_driver(&my_motor);
  void setup() {
    Serial.begin(115200);
    my_motor.setup();
-   my_driver.enable_serial();
+   my_driver.enable_serial(&Serial);
    Serial.println(DRIVERCOMMANDS);
 }
 

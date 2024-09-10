@@ -4,7 +4,7 @@
 #include "DCMotor.h"
 
 //this is in header so the main sketch can see it
-#define DRIVERCOMMANDS "Motor controls:\n'm_s<num>' - set motor to <num>% power\n'm_off' - turn motor off\n'm_CW' - set direction clockwise\n'm_CCW' - set direction counterclockwise\n'm_d?' - get direction\nm_s? - get current and final speed\nm_a<num> set acceleration as power/s\nm_a? -get acceleration \nm_l<num> set the turn to turn (calibration still missing)\nm_l? get time to turn\nAny other command will stop the motor."
+#define DRIVERCOMMANDS "Motor controls:\n'm_initD<CW/CCW>S<num>A<num>T<num>' - set motor direction, speed, accl, turns when motor is off\n'm_off' - turn motor off\n'm_D<CW/CCW>' - update direction while motor is turning\n'm_D?' - get direction\n'm_S<num>' - update final speed while motor is turning\n'm_S?' - get current and final speed\n'm_A<num>' -update accl while motor is turning\n'm_A?' -get acceleration\n'm_T<num>' - update turn to turn\n'm_T?' - get time to turn\nAny other command will stop the motor."
 
 //this will go to data formats
 enum dir {
@@ -22,17 +22,20 @@ class DCRPMDriver
         void start();
         void stop();
         void main();
-        int process_command(String * input_command, HardwareSerial * Serial);
-        void set_parameters(dir direction_in,float speed=NULL, float accl=NULL, float trn=NULL);        
+        void enable_serial(HardwareSerial * Serial);
+        int process_command(String * input_command);
+        void set_parameters(dir direction_in,float speed=NULL, float accl=NULL, float trn=NULL);       
         void update_direction(dir direction_in);
         void update_speed(float speed);
         void update_accl(float accl);
-        bool get_status(){return movement;};        
-        float get_turns(){return turns;};
-        String get_speed(){return String(speed)+"/"+String(final_speed);};
-        float get_accl(){return acclvalue;};        
+        void update_time(float time);//in seconds
+        bool is_motor_turning(){return movement;};        
+        bool is_action_finished(){return (speed_reached && !turns_to_cover);}        
         String get_direction();        
-        void enable_serial(){serial_enabled=true;};
+        String get_speed(){return String(speed)+"/"+String(final_speed);};
+        float get_accl(){return acclvalue;};
+        float get_turns(){return turns;};                
+        
     protected:
 
     private:
@@ -41,6 +44,7 @@ class DCRPMDriver
         void update_sign(float &value);
         void ramp_up_down();
         unsigned long now_time;
+        bool action_printed=true;
         bool speed_reached=true;
         bool direction_received=false;        
         float acclvalue=NULL;//in pwm
@@ -55,6 +59,7 @@ class DCRPMDriver
         float time_to_turn=NULL;
         bool turns_to_cover=false;
         DCMotor * Motor=NULL;
+        HardwareSerial * Serial=NULL;
 };
 
 #endif // DCRPMDRIVER_H

@@ -11,44 +11,98 @@
     #define M1_dir1 18
     #define M1_dir2 19
     #define M1_pwm 21
+    #define PRG_up 5
+    #define PRG_down 4
+    #define PRG_start 2
 #endif
 
 DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
-
 DCRPMDriver my_driver(&my_motor);
+int prg_nmbr=0;
+bool down;
+
+
+void ARDUINO_ISR_ATTR IRS_up(){
+    prg_nmbr++;
+    if (prg_nmbr>=4){
+        prg_nmbr=prg_nmbr - 4;
+    }
+    
+}
+
+void ARDUINO_ISR_ATTR IRS_down(){
+    down=true;
+}
+
+void ARDUINO_ISR_ATTR IRS_program(){
+    switch(prg_nmbr){
+        case 0:
+            program_null();
+            break;
+        case 1:
+            //program_one();
+            break;
+        case 2:
+            //program_two();
+            break;
+        case 3:
+            program_three();
+            break;
+    }
+}
+
+void my_delay(int time){
+    while (!my_driver.is_action_finished()){
+        delay(1);
+    }
+}
+
+void program_three(){
+    my_driver.set_parameters(CW,50,5,500);
+    my_driver.start();
+    my_delay(1);
+    my_driver.update_speed(75);
+    my_delay(1);
+    my_driver.update_direction(CCW);
+    my_delay(1);
+    my_driver.update_time(10);
+    my_delay(1);
+    my_driver.update_speed(NULL);
+    my_delay(1);
+}
+
+
+void program_null(){
+    my_driver.set_parameters(CW,50,0,500);
+    my_driver.start();
+    my_delay(1);
+    my_driver.stop();
+}
+
+
+
+
 
 // the setup routine runs once when you press reset:
 void setup() {
-    Serial.begin();
+    Serial.begin(115200);    
+    pinMode(PRG_down, INPUT_PULLUP);
+    Serial.println(digitalRead(PRG_down));
+    attachInterrupt(PRG_down, IRS_down, FALLING);    
     my_motor.setup();
-}
-//ramp up, const, ramp down 30 seconds
-void first_step(){
-    my_driver.set_direction(CW);
-    my_driver.set_speed(50);
-    my_driver.set_accl(5);
-    my_driver.set_turns(1000);//this should be called after the speed and accl are set
-    Serial.prinln(my_driver.get_turns());
-    my_driver.start_turns(1000);
-}
-//ramp up, ramp down 20 seconds
-void second_step(){
-    my_driver.set_direction(CW);
-    my_driver.set_speed(50);
-    my_driver.set_accl(5);
-    Serial.prinln(my_driver.get_turns());
-    my_driver.start_turns(500);
-}
-//no ramp, const, no ramp 10 seconds
-void third_step(){
-    my_driver.set_direction(CCW);
-    my_driver.set_speed(50);
-    my_driver.set_accl(0);
-    my_driver.start_turns(500);
 }
 
 // // the loop routine runs over and over again forever:
 void loop() {
+    if (down){
+        down=false;
+        prg_nmbr--;
+        if (prg_nmbr<=-1){
+            prg_nmbr=prg_nmbr + 4;
+        }
+        Serial.println(prg_nmbr);
+    }
+
    my_driver.main();
 }
 
