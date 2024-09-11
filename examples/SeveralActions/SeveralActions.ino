@@ -15,6 +15,7 @@
     #define M1_pwm 21
     #define PRG_start 4
     #define PRG_select 34
+    #define PIN_LED 5
 #endif
 
 DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
@@ -23,7 +24,11 @@ Bouncy_Button my_button(PRG_start,INPUT_PULLUP, FALLING, MYHARD);
 
 int prg_nmbr;
 bool start=false;
+bool pin_on=false;
+bool time_passed=false;
+long int current_time;
 int counter=0;
+int old_counter=0;
 
 void (*chosen_program)();
 
@@ -52,7 +57,9 @@ void press_main(){
       return;
     }else{
       start=true;
+      current_time=millis();
       counter=0;
+      old_counter=0;
     }
     if (start){
        switch(prg_nmbr){
@@ -73,51 +80,159 @@ void press_main(){
 
 }
 
+void led_indicator(){
+  if(start){
+    if (!pin_on && !time_passed){
+      digitalWrite(PIN_LED,HIGH);
+      pin_on=true;
+    }else if (pin_on && time_passed){
+      pin_on=false;
+      digitalWrite(PIN_LED,LOW);
+    }
+    if (old_counter!=counter){
+      if(millis()-current_time>=500){
+        current_time=millis();
+        old_counter=counter;
+        time_passed=true;
+      }
+    }else{
+      if(millis()-current_time>=500){
+        current_time=millis();
+        time_passed=false;
+      }
+    }
+  }else{
+    if(pin_on){
+      pin_on=false;
+      digitalWrite(PIN_LED,LOW);
+      time_passed=false;
+    }
+  }
+
+}
+
 
 void program_three(){
-    my_driver.set_parameters(CW,50,5,500);
-    my_driver.start();
-    my_driver.update_speed(75);
-    my_driver.update_direction(CCW);
-    my_driver.update_time(10);
-    my_driver.update_speed(NULL);
-    start=false;
+    switch(counter){
+      case 0:
+        if (!my_driver.is_motor_turning()){
+          my_driver.set_parameters(CW,50,5,500);
+          my_driver.start();
+        }else{
+          counter++;  
+        }
+        break;
+      case 1:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_speed(75);
+        }
+        break;
+      case 2:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_direction(CCW);
+        }
+      case 3:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_time(10);
+        }
+        break;
+      case 4:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_speed(NULL);
+        }
+        break;
+      case 5:
+        if (my_driver.is_action_finished()){
+           my_driver.stop();
+           start=false;
+        }
+        break;
+    }
 }
 
 void program_null(){
     switch(counter){
       case 0:
-        my_driver.set_parameters(CW,50,0,500);
-        counter++;
+        if (!my_driver.is_motor_turning()){
+          my_driver.set_parameters(CW,50,0,500);
+          my_driver.start();
+        }else{ 
+          counter++;  
+        }
         break;
       case 1:
-        if (!my_driver.is_motor_turning()){
-          my_driver.start();
-        }
         if (my_driver.is_action_finished()){
           counter++;
+          my_driver.update_speed(NULL);
         }
         break;
       case 2:
-        my_driver.stop();
-        start=false;
+        if (my_driver.is_action_finished()){
+          my_driver.stop();
+          start=false;
+        }
         break;
     }
 }
 
 
 void program_two(){
-    my_driver.set_parameters(CW,50,5,500);
-    my_driver.start();
-    my_driver.update_speed(NULL);
-    start=false;
+      switch(counter){
+      case 0:
+        if (!my_driver.is_motor_turning()){
+          my_driver.set_parameters(CW,50,5,0);
+          my_driver.start();
+        }else{ 
+          counter++;  
+        }
+        break;
+      case 1:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_speed(NULL);
+        }
+        break;
+      case 2:
+        if (my_driver.is_action_finished()){
+          my_driver.stop();
+          start=false;
+        }
+        break;
+    }
 }
 void program_one(){
-    my_driver.set_parameters(CW,50,5,500);
-    my_driver.start();
-    my_driver.update_time(10);
-    my_driver.update_speed(NULL);
-    start=false;
+        switch(counter){
+      case 0:
+        if (!my_driver.is_motor_turning()){
+          my_driver.set_parameters(CW,50,5,0);
+          my_driver.start();
+        }else{ 
+          counter++;  
+        }
+        break;
+      case 1:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_time(20);
+        }
+        break;
+      case 2:
+        if (my_driver.is_action_finished()){
+          counter++;
+          my_driver.update_speed(NULL);
+        }
+        break;
+      case 3:
+        if (my_driver.is_action_finished()){
+          my_driver.stop();
+          start=false;
+        }
+        break;
+    }
 }
 
 void program_end(){
@@ -138,10 +253,12 @@ void setup() {
     prg_nmbr=my_map(analogRead(PRG_select),4096,0,4,0);
     Serial.println(prg_nmbr);
     chosen_program=&my_pass;
+    pinMode(PIN_LED,OUTPUT);
 }
 
 // // the loop routine runs over and over again forever:
 void loop() {
+    led_indicator();
     select_program();
     my_button.main();
     my_driver.main();

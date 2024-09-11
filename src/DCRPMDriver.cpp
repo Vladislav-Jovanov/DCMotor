@@ -42,6 +42,7 @@ void DCRPMDriver::update_time(float time){
         action_printed=false;
         time=abs(time);
         time_to_turn=1000L*time;
+        turns_to_cover=true;
         now_time=millis();
     }
 }
