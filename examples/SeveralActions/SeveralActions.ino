@@ -14,55 +14,98 @@
     #define M1_dir2 19
     #define M1_pwm 21
     #define PRG_start 4
-    #define PRG_select 34
+    //#define PRG_slider 34
+    #define PRG_up 15 //check
+    #define PRG_down 13 //check
     #define PIN_LED 5
 #endif
 
-DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
-DCRPMDriver my_driver(&my_motor);
-Bouncy_Button my_button(PRG_start,INPUT_PULLUP, FALLING, MYHARD);
-
-int prg_nmbr;
+int prg_nmbr=0;
+int tmp;
+bool blink_on=false;
 bool start=false;
-bool pin_on=false;
-bool time_passed=false;
-long int current_time;
+bool led_on=false;
+bool time_passed=false;//for LED
+long int current_time;// for LED
 int counter=0;
 int old_counter=0;
 
 void (*chosen_program)();
 
-void IRS(){
-    my_button.IRS();
+DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
+DCRPMDriver my_driver(&my_motor);
+Bouncy_Button my_button(PRG_start,INPUT_PULLUP, FALLING, MYHARD);
+#if defined PRG_up
+Bouncy_Button program_up(PRG_up, INPUT_PULLUP, FALLING, MYSOFT);
+
+void IRS_up(){
+    program_up.IRS();
+}
+//this only works when !start and when blinking is finished
+void press_up(){
+  if (!blink_on){
+    prg_nmbr++;
+    if (prg_nmbr>=4){
+        prg_nmbr=prg_nmbr - 4;
+    }
+    Serial.println(prg_nmbr);
+    init_blink();
+  }
+}
+#endif
+
+#if defined PRG_down
+Bouncy_Button program_down(PRG_down, INPUT_PULLUP, FALLING, MYSOFT);
+
+void IRS_down(){
+    program_down.IRS();
 }
 
+//this only works when !start and if blinking is finished
+void press_down(){
+  if (!blink_on){
+    prg_nmbr--;
+    if (prg_nmbr<=-1){
+        prg_nmbr=prg_nmbr + 4;
+    }
+    Serial.println(prg_nmbr);
+    init_blink();
+  }
+}
+#endif
+
+#if defined PRG_slider
 int my_map(int input, int input_max, int input_min, int out_max, int out_min){
   return out_min + (input - input_min)*(out_max-out_min)/(input_max-input_min);
 }
 
+//works if !start and blinking is finished
 void select_program(){
-  if(!start){
-      int tmp=my_map(analogRead(PRG_select),4096,0,4,0);
-      if (tmp!=prg_nmbr){
-        delay(100);//to avoid glitches between numbers
-        prg_nmbr=tmp;
-        Serial.println(prg_nmbr);
-      }
+  if (!blink_on){
+    int tmp=my_map(analogRead(PRG_slider),4096,0,4,0);
+    if (tmp!=prg_nmbr){
+      delay(100);//to avoid glitches between numbers
+      prg_nmbr=tmp;
+      Serial.println(prg_nmbr);
+      init_blink();
+    }
   }
 }
+#endif
 
+void IRS(){
+    my_button.IRS();
+}
+//this happens when my_button is pressed
 void press_main(){
     if (start){
       chosen_program=&program_end;
-      return;
     }else{
       start=true;
       current_time=millis();
       counter=0;
       old_counter=0;
-    }
-    if (start){
-       switch(prg_nmbr){
+      switch(prg_nmbr){
           case 0:
             chosen_program=&program_null;
             break;
@@ -75,18 +118,53 @@ void press_main(){
           case 3:
             chosen_program=&program_three;
             break;  
-       }      
+       }
     }
+}
+
+void init_blink(){
+    tmp=prg_nmbr+1;
+    blink_on=true;
+    led_on=true;
+    digitalWrite(PIN_LED,HIGH);
+    time_passed=false;
+    current_time=millis();
+}
+
+void blink(){
+    if (tmp>0){
+      if(millis()-current_time>=250){
+        time_passed=true;
+        current_time=millis();
+      }
+
+      if (!led_on && time_passed){
+          digitalWrite(PIN_LED,HIGH);
+          led_on=true;
+          time_passed=false;
+      }else if (led_on && time_passed){
+          led_on=false;
+          digitalWrite(PIN_LED,LOW);
+          time_passed=false;
+          tmp--;
+      }
+    }else{
+      blink_on=false;
+    }
+}
+
+//see to turn it into a class it only needs a pointer to counter and LED pin
+void init_indicator(){
 
 }
 
 void led_indicator(){
   if(start){
-    if (!pin_on && !time_passed){
+    if (!led_on && !time_passed){
       digitalWrite(PIN_LED,HIGH);
-      pin_on=true;
-    }else if (pin_on && time_passed){
-      pin_on=false;
+      led_on=true;
+    }else if (led_on && time_passed){
+      led_on=false;
       digitalWrite(PIN_LED,LOW);
     }
     if (old_counter!=counter){
@@ -101,9 +179,9 @@ void led_indicator(){
         time_passed=false;
       }
     }
-  }else{
-    if(pin_on){
-      pin_on=false;
+  }else if (!start && !blink_on){
+    if(led_on){
+      led_on=false;
       digitalWrite(PIN_LED,LOW);
       time_passed=false;
     }
@@ -241,7 +319,6 @@ void program_end(){
 }
 
 void my_pass(){
-
 }
 
 
@@ -249,21 +326,43 @@ void my_pass(){
 void setup() {
     my_motor.setup();
     my_button.setup(&press_main,&IRS);
-    Serial.begin(115200);    
-    prg_nmbr=my_map(analogRead(PRG_select),4096,0,4,0);
-    Serial.println(prg_nmbr);
-    chosen_program=&my_pass;
+    #if defined PRG_up
+      program_up.setup(&press_up,&IRS_up);
+    #endif
+    #if defined PRG_down
+      program_down.setup(&press_down,&IRS_down);
+    #endif
+    Serial.begin(115200); 
     pinMode(PIN_LED,OUTPUT);
+    chosen_program=&my_pass;
+    #if defined PRG_slider   
+    prg_nmbr=my_map(analogRead(PRG_slider),4096,0,4,0);
+    #endif
+    Serial.println(prg_nmbr);
+    init_blink();
 }
 
 // // the loop routine runs over and over again forever:
 void loop() {
+    my_button.main();//sets-resets start
     led_indicator();
-    select_program();
-    my_button.main();
-    my_driver.main();
+
+    //exclusevly if started
     if (start){
       chosen_program();
+      my_driver.main();
+    //exclusevly if stopped
+    }else{
+      blink();
+      #if defined PRG_slider
+        select_program();
+      #endif
+      #if defined PRG_up
+        program_up.main();
+      #endif
+      #if defined PRG_down
+        program_down.main();
+      #endif
     }
 }
 
