@@ -1,6 +1,7 @@
 #include <BouncyButton.h>
 #include <DCMotor.h>
 #include <DCRPMDriver.h>
+#include <LEDIndicator.h>
 
 
 //here define pins for motor
@@ -21,17 +22,12 @@
 #endif
 
 int prg_nmbr=0;
-int tmp;
-bool blink_on=false;
 bool start=false;
-bool led_on=false;
-bool time_passed=false;//for LED
-long int current_time;// for LED
 int counter=0;
-int old_counter=0;
 
 void (*chosen_program)();
 
+LED_Indicator my_indicator(PIN_LED);
 DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
 DCRPMDriver my_driver(&my_motor);
 Bouncy_Button my_button(PRG_start,INPUT_PULLUP, FALLING, MYHARD);
@@ -43,13 +39,13 @@ void IRS_up(){
 }
 //this only works when !start and when blinking is finished
 void press_up(){
-  if (!blink_on){
+  if (!my_indicator.is_blink_on()){
     prg_nmbr++;
     if (prg_nmbr>=4){
         prg_nmbr=prg_nmbr - 4;
     }
-    Serial.println(prg_nmbr);
-    init_blink();
+    Serial.println(prg_nmbr+1);
+    my_indicator.start_blink(prg_nmbr+1,250);
   }
 }
 #endif
@@ -63,13 +59,13 @@ void IRS_down(){
 
 //this only works when !start and if blinking is finished
 void press_down(){
-  if (!blink_on){
+  if (!my_indicator.is_blink_on()){
     prg_nmbr--;
     if (prg_nmbr<=-1){
         prg_nmbr=prg_nmbr + 4;
     }
-    Serial.println(prg_nmbr);
-    init_blink();
+    Serial.println(prg_nmbr+1);
+    my_indicator.start_blink(prg_nmbr+1,250);
   }
 }
 #endif
@@ -81,13 +77,13 @@ int my_map(int input, int input_max, int input_min, int out_max, int out_min){
 
 //works if !start and blinking is finished
 void select_program(){
-  if (!blink_on){
+  if (!my_indicator.is_blink_on()){
     int tmp=my_map(analogRead(PRG_slider),4096,0,4,0);
     if (tmp!=prg_nmbr){
       delay(100);//to avoid glitches between numbers
       prg_nmbr=tmp;
-      Serial.println(prg_nmbr);
-      init_blink();
+      Serial.println(prg_nmbr+1);
+      my_indicator.start_blink(prg_nmbr+1,250);
     }
   }
 }
@@ -102,9 +98,7 @@ void press_main(){
       chosen_program=&program_end;
     }else{
       start=true;
-      current_time=millis();
       counter=0;
-      old_counter=0;
       switch(prg_nmbr){
           case 0:
             chosen_program=&program_null;
@@ -122,73 +116,10 @@ void press_main(){
     }
 }
 
-void init_blink(){
-    tmp=prg_nmbr+1;
-    blink_on=true;
-    led_on=true;
-    digitalWrite(PIN_LED,HIGH);
-    time_passed=false;
-    current_time=millis();
+void update_step(){
+  counter++;
+  my_indicator.start_blink(1,250);
 }
-
-void blink(){
-    if (tmp>0){
-      if(millis()-current_time>=250){
-        time_passed=true;
-        current_time=millis();
-      }
-
-      if (!led_on && time_passed){
-          digitalWrite(PIN_LED,HIGH);
-          led_on=true;
-          time_passed=false;
-      }else if (led_on && time_passed){
-          led_on=false;
-          digitalWrite(PIN_LED,LOW);
-          time_passed=false;
-          tmp--;
-      }
-    }else{
-      blink_on=false;
-    }
-}
-
-//see to turn it into a class it only needs a pointer to counter and LED pin
-void init_indicator(){
-
-}
-
-void led_indicator(){
-  if(start){
-    if (!led_on && !time_passed){
-      digitalWrite(PIN_LED,HIGH);
-      led_on=true;
-    }else if (led_on && time_passed){
-      led_on=false;
-      digitalWrite(PIN_LED,LOW);
-    }
-    if (old_counter!=counter){
-      if(millis()-current_time>=500){
-        current_time=millis();
-        old_counter=counter;
-        time_passed=true;
-      }
-    }else{
-      if(millis()-current_time>=500){
-        current_time=millis();
-        time_passed=false;
-      }
-    }
-  }else if (!start && !blink_on){
-    if(led_on){
-      led_on=false;
-      digitalWrite(PIN_LED,LOW);
-      time_passed=false;
-    }
-  }
-
-}
-
 
 void program_three(){
     switch(counter){
@@ -197,29 +128,29 @@ void program_three(){
           my_driver.set_parameters(CW,50,5,500);
           my_driver.start();
         }else{
-          counter++;  
+          update_step();
         }
         break;
       case 1:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_speed(75);
         }
         break;
       case 2:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_direction(CCW);
         }
       case 3:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_time(10);
         }
         break;
       case 4:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_speed(NULL);
         }
         break;
@@ -239,12 +170,12 @@ void program_null(){
           my_driver.set_parameters(CW,50,0,500);
           my_driver.start();
         }else{ 
-          counter++;  
+          update_step();
         }
         break;
       case 1:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_speed(NULL);
         }
         break;
@@ -265,12 +196,12 @@ void program_two(){
           my_driver.set_parameters(CW,50,5,0);
           my_driver.start();
         }else{ 
-          counter++;  
+          update_step();
         }
         break;
       case 1:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_speed(NULL);
         }
         break;
@@ -289,18 +220,18 @@ void program_one(){
           my_driver.set_parameters(CW,50,5,0);
           my_driver.start();
         }else{ 
-          counter++;  
+          update_step();
         }
         break;
       case 1:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_time(20);
         }
         break;
       case 2:
         if (my_driver.is_action_finished()){
-          counter++;
+          update_step();
           my_driver.update_speed(NULL);
         }
         break;
@@ -333,27 +264,28 @@ void setup() {
       program_down.setup(&press_down,&IRS_down);
     #endif
     Serial.begin(115200); 
-    pinMode(PIN_LED,OUTPUT);
+    my_indicator.setup();
     chosen_program=&my_pass;
     #if defined PRG_slider   
     prg_nmbr=my_map(analogRead(PRG_slider),4096,0,4,0);
     #endif
-    Serial.println(prg_nmbr);
-    init_blink();
+    Serial.println(prg_nmbr+1);
+    my_indicator.start_blink(prg_nmbr+1, 250);
 }
 
 // // the loop routine runs over and over again forever:
 void loop() {
     my_button.main();//sets-resets start
-    led_indicator();
+    my_indicator.main();//reacts to start/stop and button press
 
     //exclusevly if started
     if (start){
+      my_indicator.start();
       chosen_program();
       my_driver.main();
     //exclusevly if stopped
     }else{
-      blink();
+      my_indicator.stop();
       #if defined PRG_slider
         select_program();
       #endif
