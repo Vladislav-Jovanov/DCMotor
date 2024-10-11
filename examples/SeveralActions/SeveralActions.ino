@@ -256,12 +256,12 @@ void my_pass(){
 // the setup routine runs once when you press reset:
 void setup() {
     my_motor.setup();
-    my_button.setup(&press_main,&IRS);
+    my_button.setup(&press_main,&IRS,500);
     #if defined PRG_up
-      program_up.setup(&press_up,&IRS_up);
+      program_up.setup(&press_up,&IRS_up,500);
     #endif
     #if defined PRG_down
-      program_down.setup(&press_down,&IRS_down);
+      program_down.setup(&press_down,&IRS_down,500);
     #endif
     Serial.begin(115200); 
     my_indicator.setup();
