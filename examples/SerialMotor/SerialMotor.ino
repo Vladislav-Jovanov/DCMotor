@@ -15,7 +15,7 @@
 
 
 String computerdata;  // in the main
-bool serial_event=false;//            in the main
+bool serial_event=false;// in the main
 
 
 DCMotor my_motor(M1_dir1, M1_dir2, M1_pwm);
@@ -32,13 +32,13 @@ DCRPMDriver my_driver(&my_motor);
 
 
 // //function serialEvent is recognizable by arduino in the main
- void serialEvent() {
-   computerdata=Serial.readString(); //this interrupt will trigger when the data coming from the serial monitor(pc/mac/other) is received.
-   serial_event = true; //set the serial event flag only if command is in proper format
- }
+void serialEvent() {
+    computerdata=Serial.readString(); //this interrupt will trigger when the data coming from the serial monitor(pc/mac/other) is received.
+    serial_event = true; //set the serial event flag only if command is in proper format
+}
 
-  int generate_switch(String *computerdata){
-    
+int generate_switch(String *computerdata){
+
     if (computerdata->substring(0,computerdata->indexOf("_")+1)=="m_"){
       return 0;
     }else{
@@ -46,24 +46,23 @@ DCRPMDriver my_driver(&my_motor);
     }
   }
 
- void ProcessCommand(String *computerdata){
-     int error;
-     switch (generate_switch(computerdata)){
+void ProcessCommand(String *computerdata){
+    int error;
+    switch (generate_switch(computerdata)){
         case 0:
-          error=my_driver.process_command(computerdata);
-          if(error){
-            Serial.println("Command for motor doesn't exist. Halting everyting.");
+            error=my_driver.process_command(computerdata);
+            if(error){
+                Serial.println("Command for motor doesn't exist. Halting everyting.");
+                my_driver.stop();
+            }
+            break;
+        default:
+            Serial.println("Command doesn't exist. Halting everyting.");
             my_driver.stop();
-          }
-          break;
-       default:
-          Serial.println("Command doesn't exist. Halting everyting.");
-          my_driver.stop();
-          Serial.println(DRIVERCOMMANDS);
-          break;
-     }
-
- }
+            Serial.println(DRIVERCOMMANDS);
+            break;
+    }
+}
 
  // the setup routine runs once when you press reset:
  void setup() {

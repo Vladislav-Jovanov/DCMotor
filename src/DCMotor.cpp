@@ -15,7 +15,7 @@
 
 
 DCMotor::DCMotor(int dir1_pin, int dir2_pin, int pwm_pin)
-{   
+{
     pin_dir1=dir1_pin;
     pin_dir2=dir2_pin;
     pin_pwm=pwm_pin;
@@ -57,12 +57,12 @@ void DCMotor::stop(){
 
 
 void DCMotor::start(unsigned int pwm_duty){
-    #if defined (__AVR__)    
+    #if defined (__AVR__)
         analogWrite(pin_pwm, pwm_duty);
     #endif
     #if defined (ESP32)
         ledc_set_duty(LEDC_MODE , LEDC_CHANNEL, pwm_duty);
-        ledc_update_duty(LEDC_MODE , LEDC_CHANNEL);    
+        ledc_update_duty(LEDC_MODE , LEDC_CHANNEL);
     #endif
 }
 
@@ -105,11 +105,11 @@ float DCMotor::calc_pwm(float speed, float speed_min, float speed_max, float pwm
     #if defined (ESP32)
         int power=LEDC_DUTY_RES;
         return (speed-speed_min) * ( pow(2,power) -1 - pwm_min) / (speed_max-speed_min) + pwm_min;
-    #endif 
+    #endif
 }
 
 void DCMotor::check_coils(){
-    start(255);    
+    start(255);
     set_coils(1);
     delay(1000);
     set_coils(0);

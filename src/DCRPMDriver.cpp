@@ -5,7 +5,7 @@
 
 
 DCRPMDriver::DCRPMDriver(DCMotor* motor)
-{   
+{
     Motor=motor;
 
 }
@@ -20,7 +20,7 @@ void DCRPMDriver::stop(){
     speed=0;
     Motor->stop();
     Motor->stop_coils();
-    movement=false; 
+    movement=false;
 }
 
 
@@ -49,33 +49,33 @@ void DCRPMDriver::update_time(float time){
 
 
 void DCRPMDriver::update_sign(float &value){
-    value=abs(value)*direction;        
+    value=abs(value)*direction;
 }
 
 float DCRPMDriver::check_speed(float input){
     if (input<0){
         input=0;
     }else if (input>100){
-        input=100;    
+        input=100;
     }
     return input;
 }
 
-//can be used only if motor is ON and not 
-void DCRPMDriver::update_speed(float speed_in){        
+//can be used only if motor is ON and not
+void DCRPMDriver::update_speed(float speed_in){
     if (!turns_to_cover && speed_reached && movement){
-        action_printed=false;    
+        action_printed=false;
         final_speed=check_speed(speed_in);
         update_sign(final_speed);
-        speed_reached=false;           
+        speed_reached=false;
         if (acclvalue!=NULL){
             now_time=millis();
-        }    
+        }
     }
 }
 
 void DCRPMDriver::update_accl(float accl){
-    if (!turns_to_cover && speed_reached && movement){ 
+    if (!turns_to_cover && speed_reached && movement){
         acclvalue=abs(accl);
     }
 }
@@ -85,7 +85,7 @@ void DCRPMDriver::update_direction(dir direction_in){
     if (!turns_to_cover && speed_reached && movement){
         if (direction!=direction_in){
             direction=direction_in;
-            update_sign(final_speed);                
+            update_sign(final_speed);
         }
         if (acclvalue==NULL){
             direction_received=true;
@@ -103,10 +103,10 @@ void DCRPMDriver::start(){
         movement=true;
         direction_received=true;
         speed_reached=false;
-        now_time=millis();        
+        now_time=millis();
         if (turns!=NULL){
-            turns_to_cover=true;        
-        }  
+            turns_to_cover=true;
+        }
     }
 }
 
@@ -132,34 +132,34 @@ void DCRPMDriver::ramp_up_down(){
     if (speed<final_speed){
         if (speed<0 && speed+acclvalue*25/1000>=0){
             Motor->start(0);
-            Motor->set_coils(direction);       
+            Motor->set_coils(direction);
         }
         speed=speed+acclvalue*25/1000;
         if (speed>=final_speed){
             speed=final_speed;
             speed_reached=true;
             if (final_speed==NULL){
-                stop();            
+                stop();
             }
             if (turns_to_cover){
-                now_time=millis();                           
-            }             
+                now_time=millis();
+            }
         }
     }else if (speed>final_speed){
         if (speed>=0 && speed-acclvalue*25/1000<=0){
             Motor->start(0);
-            Motor->set_coils(direction);        
+            Motor->set_coils(direction);
         }
         speed=speed-acclvalue*25/1000;
         if (speed<=final_speed){
             speed=final_speed;
             speed_reached=true;
             if (final_speed==NULL){
-                stop();            
+                stop();
             }
             if (turns_to_cover){
-                now_time=millis(); 
-            }          
+                now_time=millis();
+            }
         }
     }
     //Serial.print(speed);
@@ -172,33 +172,33 @@ void DCRPMDriver::main(){
         if (direction_received){
             Motor->set_coils(direction);
             direction_received=false;
-        }        
+        }
         if (!speed_reached && acclvalue==NULL){
-            pwm=Motor->calc_pwm(abs(final_speed),0,100,0);        
+            pwm=Motor->calc_pwm(abs(final_speed),0,100,0);
             Motor->start(pwm);
             speed=final_speed;
             speed_reached=true;
             if (final_speed==NULL){
-                stop();            
-            }                
+                stop();
+            }
         }
         if (!speed_reached && acclvalue!=NULL){
             if (millis()-now_time>=25){
                 ramp_up_down();
-                pwm=Motor->calc_pwm(abs(speed),0,100,0); 
+                pwm=Motor->calc_pwm(abs(speed),0,100,0);
                 Motor->start(pwm);
-                now_time=millis();        
+                now_time=millis();
             }
         }
         if (speed_reached && turns_to_cover){
-           if (millis()-now_time>=time_to_turn){       
-                turns_to_cover=false;        
+           if (millis()-now_time>=time_to_turn){
+                turns_to_cover=false;
             }
         }
         if (serial_enabled){
             if (is_action_finished() && !action_printed){
                 Serial->println("Action is finished!");
-                action_printed=true;            
+                action_printed=true;
             }
         }
     }
@@ -213,13 +213,12 @@ void DCRPMDriver::enable_serial(HardwareSerial * Serial_in){
 
 int DCRPMDriver::process_command(String *input_command){
     if (serial_enabled){
-        Serial->println("Action received!");
         if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+5)=="init"){
             float spd=input_command->substring(input_command->indexOf("S")+1,input_command->indexOf("A")).toFloat();
             float accl=input_command->substring(input_command->indexOf("A")+1,input_command->indexOf("T")).toFloat();
             float trn=input_command->substring(input_command->indexOf("T")+1).toFloat();
             if (input_command->substring(input_command->indexOf("D")+1,input_command->indexOf("S"))=="CW"){
-                set_parameters(CW,spd,accl,trn);            
+                set_parameters(CW,spd,accl,trn);
             }else if (input_command->substring(input_command->indexOf("D")+1,input_command->indexOf("S"))=="CCW"){
                 set_parameters(CCW,spd,accl,trn);
             }
@@ -248,24 +247,24 @@ int DCRPMDriver::process_command(String *input_command){
         }else if (input_command->substring(input_command->indexOf("_")+1,input_command->indexOf("_")+3)=="T?"){
             Serial->println(get_turns());
             return 0;
-        }else if (input_command->substring(input_command->indexOf("S")+1,input_command->indexOf("S")+5)=="NULL"){           
+        }else if (input_command->substring(input_command->indexOf("S")+1,input_command->indexOf("S")+5)=="NULL"){
             update_speed(NULL);
             return 0;
         }else if (input_command->substring(input_command->indexOf("A")+1,input_command->indexOf("A")+5)=="NULL"){
-            update_accl(NULL);        
+            update_accl(NULL);
             return 0;
         }else if (input_command->indexOf("S")>0){
-            if (input_command->substring(input_command->indexOf("S")+1).toFloat()<=0){         
+            if (input_command->substring(input_command->indexOf("S")+1).toFloat()<=0){
                 return 1;
-            }else {           
+            }else{
                 update_speed(input_command->substring(input_command->indexOf("S")+1).toFloat());
                 return 0;
             }
         }else if (input_command->indexOf("A")>0){
-            if (input_command->substring(input_command->indexOf("A")+1).toFloat()<=0){          
+            if (input_command->substring(input_command->indexOf("A")+1).toFloat()<=0){
                 return 1;
             }else if (input_command->substring(input_command->indexOf("A")+1).toFloat()>0){
-                update_accl(input_command->substring(input_command->indexOf("A")+1).toFloat());        
+                update_accl(input_command->substring(input_command->indexOf("A")+1).toFloat());
                 return 0;
             }
         }else{

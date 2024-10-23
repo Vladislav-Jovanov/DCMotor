@@ -10,10 +10,10 @@ class DCMotor
         void start(unsigned int pwm_duty);
         void stop();
         void setup();
-        void set_coils(int direction);        
+        void set_coils(int direction);
         void short_break();
         void stop_coils();
-        void check_coils();        
+        void check_coils();
         float calc_pwm(float speed, float speed_min, float speed_max, float pwm_min);
     protected:
 
@@ -21,7 +21,7 @@ class DCMotor
         int pin_dir1;
         int pin_dir2;
         int pin_pwm;
-        
+
 };
 
 #endif // DCMOTOR_H

@@ -39,14 +39,14 @@ void IRS_up(){
 }
 //this only works when !start and when blinking is finished
 void press_up(){
-  if (!my_indicator.is_blink_on()){
-    prg_nmbr++;
-    if (prg_nmbr>=4){
-        prg_nmbr=prg_nmbr - 4;
+    if (!my_indicator.is_blink_on()){
+        prg_nmbr++;
+        if (prg_nmbr>=4){
+            prg_nmbr=prg_nmbr - 4;
+        }
+        Serial.println(prg_nmbr+1);
+        my_indicator.start_blink(prg_nmbr+1,250);
     }
-    Serial.println(prg_nmbr+1);
-    my_indicator.start_blink(prg_nmbr+1,250);
-  }
 }
 #endif
 
@@ -59,14 +59,14 @@ void IRS_down(){
 
 //this only works when !start and if blinking is finished
 void press_down(){
-  if (!my_indicator.is_blink_on()){
-    prg_nmbr--;
-    if (prg_nmbr<=-1){
-        prg_nmbr=prg_nmbr + 4;
+    if (!my_indicator.is_blink_on()){
+        prg_nmbr--;
+        if (prg_nmbr<=-1){
+            prg_nmbr=prg_nmbr + 4;
+        }
+        Serial.println(prg_nmbr+1);
+        my_indicator.start_blink(prg_nmbr+1,250);
     }
-    Serial.println(prg_nmbr+1);
-    my_indicator.start_blink(prg_nmbr+1,250);
-  }
 }
 #endif
 
@@ -77,15 +77,15 @@ int my_map(int input, int input_max, int input_min, int out_max, int out_min){
 
 //works if !start and blinking is finished
 void select_program(){
-  if (!my_indicator.is_blink_on()){
-    int tmp=my_map(analogRead(PRG_slider),4096,0,4,0);
-    if (tmp!=prg_nmbr){
-      delay(100);//to avoid glitches between numbers
-      prg_nmbr=tmp;
-      Serial.println(prg_nmbr+1);
-      my_indicator.start_blink(prg_nmbr+1,250);
+    if (!my_indicator.is_blink_on()){
+        int tmp=my_map(analogRead(PRG_slider),4096,0,4,0);
+        if (tmp!=prg_nmbr){
+            delay(100);//to avoid glitches between numbers
+            prg_nmbr=tmp;
+            Serial.println(prg_nmbr+1);
+            my_indicator.start_blink(prg_nmbr+1,250);
+        }
     }
-  }
 }
 #endif
 
@@ -95,24 +95,24 @@ void IRS(){
 //this happens when my_button is pressed
 void press_main(){
     if (start){
-      chosen_program=&program_end;
+        chosen_program=&program_end;
     }else{
-      start=true;
-      counter=0;
-      switch(prg_nmbr){
-          case 0:
-            chosen_program=&program_null;
-            break;
-          case 1:
-            chosen_program=&program_one;
-            break;
-          case 2:
-            chosen_program=&program_two;
-            break;
-          case 3:
-            chosen_program=&program_three;
-            break;  
-       }
+        start=true;
+        counter=0;
+        switch(prg_nmbr){
+            case 0:
+                chosen_program=&program_null;
+                break;
+            case 1:
+                chosen_program=&program_one;
+                break;
+            case 2:
+                chosen_program=&program_two;
+                break;
+            case 3:
+                chosen_program=&program_three;
+                break;
+        }
     }
 }
 
@@ -123,43 +123,43 @@ void update_step(){
 
 void program_three(){
     switch(counter){
-      case 0:
-        if (!my_driver.is_motor_turning()){
-          my_driver.set_parameters(CW,50,5,500);
-          my_driver.start();
-        }else{
-          update_step();
-        }
-        break;
-      case 1:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_speed(75);
-        }
-        break;
-      case 2:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_direction(CCW);
-        }
-      case 3:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_time(10);
-        }
-        break;
-      case 4:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_speed(NULL);
-        }
-        break;
-      case 5:
-        if (my_driver.is_action_finished()){
-           my_driver.stop();
-           start=false;
-        }
-        break;
+        case 0:
+            if (!my_driver.is_motor_turning()){
+                my_driver.set_parameters(CW,50,5,500);
+                my_driver.start();
+            }else{
+                update_step();
+            }
+            break;
+        case 1:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_speed(75);
+            }
+            break;
+        case 2:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_direction(CCW);
+            }
+        case 3:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_time(10);
+            }
+            break;
+        case 4:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_speed(NULL);
+            }
+            break;
+        case 5:
+            if (my_driver.is_action_finished()){
+                my_driver.stop();
+                start=false;
+            }
+            break;
     }
 }
 
@@ -169,7 +169,7 @@ void program_null(){
         if (!my_driver.is_motor_turning()){
           my_driver.set_parameters(CW,50,0,500);
           my_driver.start();
-        }else{ 
+        }else{
           update_step();
         }
         break;
@@ -190,63 +190,63 @@ void program_null(){
 
 
 void program_two(){
-      switch(counter){
-      case 0:
-        if (!my_driver.is_motor_turning()){
-          my_driver.set_parameters(CW,50,5,0);
-          my_driver.start();
-        }else{ 
-          update_step();
-        }
-        break;
-      case 1:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_speed(NULL);
-        }
-        break;
-      case 2:
-        if (my_driver.is_action_finished()){
-          my_driver.stop();
-          start=false;
-        }
-        break;
+    switch(counter){
+        case 0:
+            if (!my_driver.is_motor_turning()){
+                my_driver.set_parameters(CW,50,5,0);
+                my_driver.start();
+            }else{
+                update_step();
+            }
+            break;
+        case 1:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_speed(NULL);
+            }
+            break;
+        case 2:
+            if (my_driver.is_action_finished()){
+                my_driver.stop();
+                start=false;
+            }
+            break;
     }
 }
 void program_one(){
-        switch(counter){
-      case 0:
-        if (!my_driver.is_motor_turning()){
-          my_driver.set_parameters(CW,50,5,0);
-          my_driver.start();
-        }else{ 
-          update_step();
-        }
-        break;
-      case 1:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_time(20);
-        }
-        break;
-      case 2:
-        if (my_driver.is_action_finished()){
-          update_step();
-          my_driver.update_speed(NULL);
-        }
-        break;
-      case 3:
-        if (my_driver.is_action_finished()){
-          my_driver.stop();
-          start=false;
-        }
-        break;
+    switch(counter){
+        case 0:
+            if (!my_driver.is_motor_turning()){
+                my_driver.set_parameters(CW,50,5,0);
+                my_driver.start();
+            }else{
+                update_step();
+            }
+            break;
+        case 1:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_time(20);
+            }
+            break;
+        case 2:
+            if (my_driver.is_action_finished()){
+                update_step();
+                my_driver.update_speed(NULL);
+            }
+            break;
+        case 3:
+            if (my_driver.is_action_finished()){
+                my_driver.stop();
+                start=false;
+            }
+            break;
     }
 }
 
 void program_end(){
-  my_driver.stop();
-  start=false;
+    my_driver.stop();
+    start=false;
 }
 
 void my_pass(){
@@ -263,10 +263,10 @@ void setup() {
     #if defined PRG_down
       program_down.setup(&press_down,&IRS_down,500);
     #endif
-    Serial.begin(115200); 
+    Serial.begin(115200);
     my_indicator.setup();
     chosen_program=&my_pass;
-    #if defined PRG_slider   
+    #if defined PRG_slider
     prg_nmbr=my_map(analogRead(PRG_slider),4096,0,4,0);
     #endif
     Serial.println(prg_nmbr+1);
@@ -280,21 +280,20 @@ void loop() {
 
     //exclusevly if started
     if (start){
-      my_indicator.start();
-      chosen_program();
-      my_driver.main();
+        my_indicator.start();
+        chosen_program();
+        my_driver.main();
     //exclusevly if stopped
     }else{
-      my_indicator.stop();
-      #if defined PRG_slider
-        select_program();
-      #endif
-      #if defined PRG_up
-        program_up.main();
-      #endif
-      #if defined PRG_down
-        program_down.main();
-      #endif
+        my_indicator.stop();
+        #if defined PRG_slider
+            select_program();
+        #endif
+        #if defined PRG_up
+            program_up.main();
+        #endif
+        #if defined PRG_down
+            program_down.main();
+        #endif
     }
 }
-
