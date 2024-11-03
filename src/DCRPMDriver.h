@@ -4,7 +4,7 @@
 #include "DCMotor.h"
 
 //this is in header so the main sketch can see it
-#define DRIVERCOMMANDS "initD<CW/CCW>S<num>A<num>T<num>' - set motor direction, speed, accl, turns when motor is off\n'off' - turn motor off\n'D<CW/CCW>' - update direction while motor is turning\n'D?' - get direction\n'S<num>' - update final speed while motor is turning\n'S?' - get current and final speed\n'A<num>' -update accl while motor is turning\n'A?' -get acceleration\n'T<num>' - update turns to turn\n'T?' - get turns\n"
+#define DRIVERCOMMANDS "initD<CW/CCW>S<num>A<num>T<num>' - set motor direction, speed, accl, turns when motor is off\n'on' -turn motor on\n'off' - turn motor off\n'D<CW/CCW>' - update direction while motor is turning\n'D?' - get direction\n'S<num>' - update final speed while motor is turning\n'S?' - get current and final speed\n'A<num>' -update accl while motor is turning\n'A?' -get acceleration\n'T<num>' - update turns to turn\n'T?' - get turns"
 
 //this will go to data formats
 enum dir {
